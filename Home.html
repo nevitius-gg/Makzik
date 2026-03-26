@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Адмін-панель Discord</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #36393f; /* Колір Discord */
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .panel {
+            background: #2f3136;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        input {
+            padding: 12px;
+            width: 300px;
+            border-radius: 5px;
+            border: none;
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+        button {
+            padding: 12px 25px;
+            background-color: #5865f2;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        button:hover { background-color: #4752c4; }
+        #status { margin-top: 15px; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+    <div class="panel">
+        <h1>Керування через Discord</h1>
+        <p>Напишіть повідомлення, яке з'явиться в каналі:</p>
+        
+        <input type="text" id="messageInput" placeholder="Введіть текст...">
+        <br>
+        <button onclick="sendToDiscord()">Відправити в Discord</button>
+        
+        <div id="status"></div>
+    </div>
+
+    <script>
+        async function sendToDiscord() {
+            // ТВОЄ ПОСИЛАННЯ (залиш як є, браузер пропустить прямий запит до Discord)
+            const webhookURL = "https://discord.com/api/webhooks/1486728752229777591/fEnJSU1D4t0WOsGSCVXkzL-Ft22bFxzV0sfpZnRfDW78taq08M0Tenu9YsQobUZV77Au";
+            
+            const message = document.getElementById('messageInput').value;
+            const statusDiv = document.getElementById('status');
+
+            if (!message) {
+                statusDiv.innerText = "❌ Будь ласка, введіть текст!";
+                return;
+            }
+
+            const data = {
+                content: message,
+                username: "Панель Керування Сайту"
+            };
+
+            try {
+                const response = await fetch(webhookURL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    statusDiv.style.color = "#43b581";
+                    statusDiv.innerText = "✅ Відправлено успішно!";
+                    document.getElementById('messageInput').value = "";
+                } else {
+                    statusDiv.style.color = "#f04747";
+                    statusDiv.innerText = "❌ Помилка відправки.";
+                }
+            } catch (error) {
+                statusDiv.innerText = "❌ Помилка мережі.";
+                console.error(error);
+            }
+        }
+    </script>
+</body>
+</html>
