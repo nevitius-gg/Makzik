@@ -2,45 +2,34 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Makzik Dashboard Ultra v3.6</title>
+    <title>Makzik Serverside v4.0</title>
     <style>
         :root { --bg: #050505; --panel: #0a0a0a; --border: #1a1a1a; --accent: #5865f2; --text: #ffffff; --subtext: #888888; --card-bg: #0d0d0d; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); display: flex; height: 100vh; margin: 0; overflow: hidden; }
-        
         .sidebar { width: 240px; background: var(--panel); border-right: 1px solid var(--border); padding: 20px 15px; display: flex; flex-direction: column; }
         .nav-item { padding: 12px 15px; border-radius: 8px; cursor: pointer; margin-bottom: 5px; display: flex; align-items: center; transition: 0.2s; color: var(--subtext); font-size: 14px; gap: 12px; }
-        .nav-item svg { width: 18px; height: 18px; fill: currentColor; }
         .nav-item:hover { background: #1a1a1a; color: white; }
         .nav-item.active { background: white; color: black; font-weight: bold; }
-        
         .content { flex: 1; padding: 40px; overflow-y: auto; position: relative; }
         .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; }
-        .card { background: var(--card-bg); border: 1px solid var(--border); padding: 25px; border-radius: 12px; margin-bottom: 20px; position: relative; }
-        
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        .card { background: var(--card-bg); border: 1px solid var(--border); padding: 25px; border-radius: 12px; position: relative; }
         .action-btn { background: #1a1a1a; border: 1px solid var(--border); padding: 12px; border-radius: 8px; color: white; cursor: pointer; font-size: 14px; margin-top: 10px; transition: 0.3s; width: 100%; font-weight: bold; }
-        .action-btn:hover { background: var(--accent); border-color: var(--accent); }
+        .action-btn:hover:not(:disabled) { background: var(--accent); border-color: var(--accent); }
         .action-btn:disabled { opacity: 0.2; cursor: not-allowed; }
-        
         textarea, input, select { width: 100%; background: #000; border: 1px solid var(--border); border-radius: 8px; color: white; padding: 12px; box-sizing: border-box; outline: none; margin-top: 10px; }
-        
         .page { display: none; }
         .page.active { display: block; }
-        
-        .list-container { background: #000; border: 1px solid var(--border); padding: 15px; border-radius: 8px; max-height: 350px; overflow-y: auto; font-family: monospace; font-size: 13px; color: #aaa; margin-top: 15px; }
-        .list-item { border-bottom: 1px solid var(--border); padding: 12px 0; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-        .list-item:last-child { border: none; }
-        .game-name { color: #fff; font-weight: bold; font-size: 14px; }
-        
         #globalStatus { position: fixed; bottom: 20px; right: 20px; font-size: 11px; padding: 8px 15px; border-radius: 20px; background: #161b22; border: 1px solid #30363d; display: none; z-index: 100; }
+        #updateLog { font-size: 13px; color: #888; white-space: pre-wrap; font-family: 'Consolas', monospace; max-height: 250px; overflow-y: auto; border: 1px solid #1a1a1a; padding: 10px; border-radius: 8px; }
     </style>
 </head>
 <body>
 
     <div class="sidebar">
-        <div style="font-size: 24px; font-weight: 900; color: white; padding-left: 10px; margin-bottom: 30px; letter-spacing: -1px;">MAKZIK</div>
+        <div style="font-size: 22px; font-weight: 900; color: white; padding-left: 10px; margin-bottom: 30px; letter-spacing: -1px;">MAKZIK</div>
         <div class="nav-item active" onclick="showPage('dashboard', this)">🏠 <span id="nav_dash">Dashboard</span></div>
         <div class="nav-item" onclick="showPage('executor', this)">‹› <span id="nav_exec">Executor</span></div>
-        <div class="nav-item" onclick="showPage('scripts_page', this)">📄 <span id="nav_scripts">Script Hub</span></div>
         <div class="nav-item" onclick="showPage('games_page', this)">🎮 <span id="nav_games">Games</span></div>
         <div class="nav-item" onclick="showPage('settings', this)">⚙️ <span id="nav_sett">Settings</span></div>
     </div>
@@ -49,172 +38,225 @@
         <div class="header">
             <div>
                 <h1 id="greeting" style="margin:0; font-size: 32px;">...</h1>
-                <p id="sub_welcome" style="color: var(--subtext); margin: 5px 0 0 0;">Aetheris System Active</p>
+                <p style="color: var(--subtext); margin: 5px 0 0 0;">Makzik Serverside</p>
             </div>
-            <div id="clock">00:00:00</div>
+            <div id="clock" style="font-weight: bold; color: var(--subtext); border: 1px solid var(--border); padding: 5px 10px; border-radius: 5px;">00:00:00</div>
         </div>
 
         <div id="dashboard" class="page active">
-            <div class="card" id="subCard" style="border-left: 4px solid #f85149;">
-                <div id="t_license" style="color:var(--subtext); font-size: 11px; font-weight: bold; letter-spacing: 1px;">SUBSCRIPTION</div>
-                <div id="subStatus" style="font-size: 24px; font-weight: bold; color: #f85149;">🔒 UNAUTHORIZED</div>
+            <div class="stats-grid">
+                <div class="card" id="subCard" style="border-left: 4px solid #f85149;">
+                    <div id="t_lic" style="color:var(--subtext); font-size: 11px; font-weight: bold;">LICENSE</div>
+                    <div id="subStatus" style="font-size: 24px; font-weight: bold; color: #f85149;">🔒 UNAUTHORIZED</div>
+                </div>
+                <div class="card" style="border-left: 4px solid var(--accent);">
+                    <div id="t_execs" style="color:var(--subtext); font-size: 11px; font-weight: bold;">TOTAL EXECUTIONS</div>
+                    <div id="execCounter" style="font-size: 24px; font-weight: bold; color: var(--accent);">0</div>
+                </div>
             </div>
             <div class="card">
-                <div id="t_logs" style="color:var(--subtext); font-size: 11px; font-weight: bold; letter-spacing: 1px; margin-bottom: 10px;">UPDATE LOGS</div>
-                <div id="updateLog" style="font-size: 13px; color: #888; white-space: pre-wrap; font-family: monospace;">Loading...</div>
+                <div id="t_logs" style="color:var(--subtext); font-size: 11px; font-weight: bold; margin-bottom: 15px;">UPDATE LOGS</div>
+                <div id="updateLog">Fetching data...</div>
             </div>
         </div>
 
         <div id="executor" class="page">
-            <div class="card" style="position: relative; min-height: 450px;">
-                <div id="execLock" class="locked-screen" style="position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); display:flex; justify-content:center; align-items:center; z-index:10; flex-direction:column;">
-                    <h2 style="color:#f85149;">LOCKED</h2>
-                    <p style="color:gray;">Redeem key in settings</p>
+            <div class="card">
+                <div id="execLock" style="position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); display:flex; justify-content:center; align-items:center; z-index:10; flex-direction:column; border-radius:12px;">
+                    <h2 id="l_denied" style="color:#f85149;">ACCESS DENIED</h2>
+                    <p id="l_msg" style="color:gray;">Activate license in Settings</p>
                 </div>
-                <h2>Executor</h2>
-                <textarea id="execContent" rows="18" placeholder="-- Enter code..."></textarea>
-                <button class="action-btn" id="execBtn" onclick="sendToGithub('textlol.txt', 'execContent', false)" disabled>Execute</button>
+                <h2 id="h_exec">Executor</h2>
+                <input type="text" id="playerNick" placeholder="User Nickname (user23)">
+                <textarea id="execContent" rows="15" placeholder="-- Lua Script Content"></textarea>
+                <button class="action-btn" id="execBtn" onclick="runExecution()" disabled>Execute</button>
             </div>
         </div>
 
         <div id="games_page" class="page">
             <div class="card">
-                <h2 id="h_games_title">Game Database</h2>
-                <div id="gamesList" class="list-container">Fetching games...</div>
-            </div>
-        </div>
-
-        <div id="scripts_page" class="page">
-            <div class="card">
-                <h2>Script Hub</h2>
-                <div id="publicScriptsList" class="list-container">Loading...</div>
-                <textarea id="publicScriptInput" rows="5" placeholder="Share code..."></textarea>
-                <button class="action-btn" onclick="sendToGithub('SCRIPTS', 'publicScriptInput', true)">Publish</button>
+                <h2 id="h_games">Games Hub</h2>
+                <div id="gamesList" style="margin-top:15px;"></div>
             </div>
         </div>
 
         <div id="settings" class="page">
             <div class="card">
-                <h2>Language</h2>
+                <h2 id="h_lang">Interface Language</h2>
                 <select id="langSelect" onchange="changeLang()">
-                    <option value="en">English</option><option value="uk">Ukrainian</option>
+                    <option value="en">English</option><option value="uk">Ukrainian</option><option value="pl">Polish</option>
+                    <option value="de">German</option><option value="fr">French</option><option value="es">Spanish</option>
+                    <option value="it">Italian</option><option value="tr">Turkish</option><option value="pt">Portuguese</option>
+                    <option value="nl">Dutch</option><option value="sv">Swedish</option><option value="no">Norwegian</option>
+                    <option value="da">Danish</option><option value="fi">Finnish</option><option value="cs">Czech</option>
+                    <option value="hu">Hungarian</option><option value="ro">Romanian</option><option value="el">Greek</option>
+                    <option value="bg">Bulgarian</option><option value="sk">Slovak</option><option value="et">Estonian</option>
+                    <option value="lv">Latvian</option><option value="lt">Lithuanian</option><option value="ja">Japanese</option>
+                    <option value="ko">Korean</option><option value="zh">Chinese</option><option value="th">Thai</option>
+                    <option value="vi">Vietnamese</option><option value="id">Indonesian</option><option value="ar">Arabic</option>
                 </select>
-                <h2 style="margin-top: 20px;">License</h2>
-                <input type="text" id="licenseKey" placeholder="Key...">
-                <button class="action-btn" style="background:var(--accent);" onclick="checkLicense()">Redeem</button>
+                <h2 id="h_lic_title" style="margin-top:25px;">License Key</h2>
+                <input type="text" id="licenseKey" placeholder="XXXX-XXXX-XXXX">
+                <button class="action-btn" style="background:var(--accent); border:none;" id="b_act" onclick="checkLicense()">Activate Access</button>
             </div>
         </div>
-
         <div id="globalStatus"></div>
     </div>
 
 <script>
 const CONFIG = {
-    token: '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',
+    token: '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',
     owner: 'timofejvivdenko-ai',
     repo: 'sfesf'
 };
 
-// 1. АВТО-ОЧИЩЕННЯ КОЖНІ 5 СЕКУНД
+// 1. АВТО-ОЧИЩЕННЯ ФАЙЛУ textlol.txt КОЖНІ 5 СЕКУНД
 async function autoClearTextLol() {
     try {
         const url = `https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents/textlol.txt`;
-        const getRes = await fetch(url, { headers: { "Authorization": `token ${CONFIG.token}` } });
-        const data = await getRes.json();
+        const res = await fetch(url, { headers: { "Authorization": `token ${CONFIG.token}` } });
+        const data = await res.json();
         
         await fetch(url, {
             method: 'PUT',
             headers: { "Authorization": `token ${CONFIG.token}`, "Content-Type": "application/json" },
             body: JSON.stringify({
-                message: "Auto Clear",
+                message: "System: Auto-Clear",
                 content: btoa("     "), // 5 пробілів
                 sha: data.sha
             })
         });
-        console.log("textlol.txt auto-cleared");
-    } catch (e) { console.error("Auto-clear failed", e); }
+        console.log("textlol.txt cleared");
+    } catch (e) { console.warn("Auto-clear waiting for valid token..."); }
 }
 setInterval(autoClearTextLol, 5000);
 
-// 2. ЗАВАНТАЖЕННЯ ІГОР З НАЗВОЮ З URL
+// 2. ВИКОНАННЯ СКРИПТА ТА ОНОВЛЕННЯ ЛОГУ (ЛІЧИЛЬНИКА)
+async function runExecution() {
+    const code = document.getElementById('execContent').value;
+    const nick = document.getElementById('playerNick').value;
+    if(!code.trim()) return showStatus("Enter code!", "#f85149");
+
+    showStatus("⌛ Syncing...", "#888");
+    try {
+        // Оновлюємо код
+        await updateFile('textlol.txt', code);
+        // Оновлюємо нік
+        if(nick.trim()) await updateFile('user23', nick);
+        
+        // Додаємо мітку виконання в лог для лічильника
+        const logUrl = `https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents/uptadeLOG`;
+        const logRes = await fetch(logUrl, { headers: { "Authorization": `token ${CONFIG.token}` } });
+        const logData = await logRes.json();
+        const updatedLog = decodeURIComponent(escape(atob(logData.content))) + "\n[EXEC] " + new Date().toLocaleString();
+        
+        await fetch(logUrl, {
+            method: 'PUT',
+            headers: { "Authorization": `token ${CONFIG.token}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ message: "Counter Update", content: btoa(unescape(encodeURIComponent(updatedLog))), sha: logData.sha })
+        });
+
+        showStatus("✅ Success!", "#3fb950");
+        document.getElementById('execContent').value = "";
+        loadLogs();
+    } catch (e) { showStatus("❌ Error 401: Token Expired", "#f85149"); }
+}
+
+async function updateFile(name, content) {
+    const url = `https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents/${name}`;
+    const get = await fetch(url, { headers: { "Authorization": `token ${CONFIG.token}` } });
+    const data = await get.json();
+    await fetch(url, {
+        method: 'PUT',
+        headers: { "Authorization": `token ${CONFIG.token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ message: "Update", content: btoa(unescape(encodeURIComponent(content))), sha: data.sha })
+    });
+}
+
+async function loadLogs() {
+    try {
+        const res = await fetch(`https://raw.githubusercontent.com/${CONFIG.owner}/${CONFIG.repo}/main/uptadeLOG?t=${Date.now()}`);
+        const text = await res.text();
+        document.getElementById('updateLog').innerText = text;
+        const count = (text.match(/\[EXEC\]/g) || []).length;
+        document.getElementById('execCounter').innerText = count;
+    } catch (e) {}
+}
+
 async function loadGames() {
     const list = document.getElementById('gamesList');
     try {
-        const res = await fetch(`https://raw.githubusercontent.com/timofejvivdenko-ai/sfesf/main/games2432?t=${Date.now()}`);
+        const res = await fetch(`https://raw.githubusercontent.com/${CONFIG.owner}/${CONFIG.repo}/main/games2432?t=${Date.now()}`);
         const text = await res.text();
         list.innerHTML = "";
         text.split('\n').forEach(line => {
             if(!line.trim()) return;
             const url = line.trim();
-            // Витягуємо останню частину URL після /
-            const parts = url.split('/');
-            const gameName = parts[parts.length - 1] || "Unknown Game";
-            
+            const name = url.split('/').pop() || "Game";
             const div = document.createElement('div');
-            div.className = "list-item";
-            div.innerHTML = `<span class="game-name">${gameName}</span> 
-                             <button onclick="window.open('${url}', '_blank')" style="background:#5865f2; border:none; color:white; padding:6px 15px; border-radius:6px; cursor:pointer; font-weight:bold;">Play</button>`;
+            div.style = "display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #1a1a1a;";
+            div.innerHTML = `<span>${name}</span><button onclick="window.open('${url}','_blank')" style="background:#5865f2; color:white; border:none; padding:5px 12px; border-radius:5px; cursor:pointer;">Play</button>`;
             list.appendChild(div);
         });
-    } catch (e) { list.innerText = "Error loading games."; }
+    } catch (e) {}
 }
 
-// Стандартні функції (таймер, зміна сторінок, ліцензія)
-function updateTime() {
-    const now = new Date();
-    document.getElementById('clock').innerText = now.toLocaleTimeString();
-    const h = now.getHours();
-    document.getElementById('greeting').innerText = (h<12?"Good morning":h<18?"Good day":"Good evening") + ".";
+// ПЕРЕКЛАДИ ТА ІНТЕРФЕЙС
+const i18n = {
+    en: { nav_dash: "Dashboard", nav_exec: "Executor", nav_games: "Games", nav_sett: "Settings", t_lic: "LICENSE", t_execs: "TOTAL EXECUTIONS", t_logs: "UPDATE LOGS", l_denied: "ACCESS DENIED", l_msg: "Activate license in Settings", h_exec: "Executor", h_games: "Games Hub", h_lang: "Language", h_lic_title: "License Key", b_act: "Activate Access", m_unauth: "🔒 UNAUTHORIZED" },
+    uk: { nav_dash: "Панель", nav_exec: "Виконавець", nav_games: "Ігри", nav_sett: "Налаштування", t_lic: "ЛІЦЕНЗІЯ", t_execs: "ВСЬОГО ВИКОНАНЬ", t_logs: "ЛОГИ ОНОВЛЕНЬ", l_denied: "ДОСТУП ЗАБОРОНЕНО", l_msg: "Активуйте ліцензію у налаштуваннях", h_exec: "Виконавець", h_games: "Хаб Ігор", h_lang: "Мова", h_lic_title: "Ключ ліцензії", b_act: "Активувати доступ", m_unauth: "🔒 НЕАВТОРИЗОВАНО" }
+};
+
+let currentLang = localStorage.getItem('lang') || 'en';
+
+function applyLang() {
+    const lang = i18n[currentLang] || i18n.en;
+    for (let id in lang) { if (document.getElementById(id)) document.getElementById(id).innerText = lang[id]; }
 }
-setInterval(updateTime, 1000); updateTime();
+
+function changeLang() {
+    currentLang = document.getElementById('langSelect').value;
+    localStorage.setItem('lang', currentLang);
+    applyLang();
+}
+
+function checkLicense() {
+    const key = document.getElementById('licenseKey').value.trim();
+    if(key) {
+        document.getElementById('subStatus').innerText = "✅ PREMIUM";
+        document.getElementById('subStatus').style.color = "#a371f7";
+        document.getElementById('execLock').style.display = "none";
+        document.getElementById('execBtn').disabled = false;
+        showStatus("Authorized", "#a371f7");
+    }
+}
 
 function showPage(p, el) {
     document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
     document.getElementById(p).classList.add('active');
     el.classList.add('active');
+    if(p === 'dashboard') loadLogs();
     if(p === 'games_page') loadGames();
 }
 
-// Функція відправки на GitHub (для Executor та Scripts)
-async function sendToGithub(file, id, append) {
-    const text = document.getElementById(id).value;
-    if (!text.trim()) return;
-    const url = `https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents/${file}`;
-    try {
-        const get = await fetch(url, { headers: { "Authorization": `token ${CONFIG.token}` } });
-        const data = await get.json();
-        let content = text;
-        if (append) {
-            const old = decodeURIComponent(escape(atob(data.content)));
-            content = old + "\n\n-- NEW SCRIPT --\n" + text;
-        }
-        await fetch(url, {
-            method: 'PUT',
-            headers: { "Authorization": `token ${CONFIG.token}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ message: "Update", content: btoa(unescape(encodeURIComponent(content))), sha: data.sha })
-        });
-        document.getElementById(id).value = "";
-    } catch (e) { alert("Error: " + e.message); }
+function showStatus(msg, color) {
+    const s = document.getElementById('globalStatus');
+    s.innerText = msg; s.style.color = color; s.style.display = "block";
+    setTimeout(() => s.style.display = "none", 3000);
 }
 
-// Перевірка ліцензії (спрощено)
-async function checkLicense() {
-    const key = document.getElementById('licenseKey').value.trim();
-    if (key) {
-        document.getElementById('subStatus').innerText = "✅ PREMIUM ACTIVE";
-        document.getElementById('subStatus').style.color = "#a371f7";
-        document.getElementById('execLock').style.display = "none";
-        document.getElementById('execBtn').disabled = false;
-    }
+function updateTime() {
+    const now = new Date();
+    document.getElementById('clock').innerText = now.toLocaleTimeString();
+    const h = now.getHours();
+    document.getElementById('greeting').innerText = h<12?"Good morning":h<18?"Good day":"Good evening";
 }
 
-async function loadLogs() {
-    try {
-        const res = await fetch(`https://raw.githubusercontent.com/${CONFIG.owner}/${CONFIG.repo}/main/uptadeLOG?t=${Date.now()}`);
-        document.getElementById('updateLog').innerText = await res.text();
-    } catch (e) { }
-}
+document.getElementById('langSelect').value = currentLang;
+applyLang();
+setInterval(updateTime, 1000);
+updateTime();
 loadLogs();
 </script>
 </body>
