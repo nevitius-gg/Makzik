@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Makzik Serverside </title>
+    <title>Makzik Serverside v4.3</title>
     <style>
         :root { --bg: #050505; --panel: #0a0a0a; --border: #1a1a1a; --accent: #5865f2; --text: #ffffff; --subtext: #888888; --card-bg: #0d0d0d; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); display: flex; height: 100vh; margin: 0; overflow: hidden; }
@@ -38,7 +38,7 @@
         <div class="header">
             <div>
                 <h1 id="greeting" style="margin:0; font-size: 32px;">...</h1>
-                <p style="color: var(--subtext); margin: 5px 0 0 0;">Makzik Serverside v4.2</p>
+                <p style="color: var(--subtext); margin: 5px 0 0 0;">Makzik Serverside v4.3</p>
             </div>
             <div id="clock" style="font-weight: bold; color: var(--subtext); border: 1px solid var(--border); padding: 5px 10px; border-radius: 5px;">00:00:00</div>
         </div>
@@ -86,7 +86,7 @@
                 <select id="langSelect" onchange="changeLang()">
                     <option value="en">English</option>
                     <option value="uk">Ukrainian</option>
-                    </select>
+                </select>
                 <h2 id="h_lic_title" style="margin-top:25px;">License Activation</h2>
                 <input type="text" id="licenseKey" placeholder="Enter License Key">
                 <button class="action-btn" style="background:var(--accent); border:none;" id="b_act" onclick="checkLicense()">Activate & Save Key</button>
@@ -97,26 +97,35 @@
 
 <script>
 const CONFIG = {
-    token: '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',
+    token: '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',
     owner: 'timofejvivdenko-ai',
     repo: 'sfesf'
 };
 
-// АВТО-ОЧИЩЕННЯ textlol.txt (кожні 5 сек)
+// АВТО-ЗАМІНА НА "easf" (кожні 5 сек)
 setInterval(async () => {
     try {
         const url = `https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents/textlol.txt`;
         const res = await fetch(url, { headers: { "Authorization": `token ${CONFIG.token}` } });
         const data = await res.json();
-        await fetch(url, {
-            method: 'PUT',
-            headers: { "Authorization": `token ${CONFIG.token}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ message: "Auto-Clear", content: btoa("     "), sha: data.sha })
-        });
-    } catch (e) { console.log("Cleaning..."); }
+        
+        // Перевіряємо поточний вміст, щоб не робити зайвих запитів, якщо там вже "easf"
+        const currentContent = atob(data.content).trim();
+        if (currentContent !== "easf") {
+            await fetch(url, {
+                method: 'PUT',
+                headers: { "Authorization": `token ${CONFIG.token}`, "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    message: "Auto-Reset to easf", 
+                    content: btoa("easf"), 
+                    sha: data.sha 
+                })
+            });
+        }
+    } catch (e) { console.log("Waiting for valid connection..."); }
 }, 5000);
 
-// ЛІЦЕНЗІЯ ТА ЗБЕРЕЖЕННЯ
+// ЛІЦЕНЗІЯ ТА ЗБЕРЕЖЕННЯ (Local Storage)
 function checkLicense() {
     const key = document.getElementById('licenseKey').value.trim();
     if(key) {
@@ -131,35 +140,37 @@ function activateUI() {
     document.getElementById('subStatus').style.color = "#a371f7";
     document.getElementById('execLock').style.display = "none";
     document.getElementById('execBtn').disabled = false;
+    document.getElementById('subCard').style.borderLeftColor = "#a371f7";
 }
 
-// ЗАПУСК (EXECUTE)
+// ВИКОНАННЯ СКРИПТА
 async function runExecution() {
     const code = document.getElementById('execContent').value;
     const nick = document.getElementById('playerNick').value;
     if(!code.trim()) return showStatus("Empty code!", "#f85149");
 
-    showStatus("⌛ Updating GitHub...", "#888");
+    showStatus("⌛ Syncing...", "#888");
     try {
         await updateGitHub('textlol.txt', code);
         if(nick.trim()) await updateGitHub('user23', nick);
         
-        // Оновлюємо лічильник у логах
+        // Оновлюємо лог (лічильник)
         const logUrl = `https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents/uptadeLOG`;
         const logRes = await fetch(logUrl, { headers: { "Authorization": `token ${CONFIG.token}` } });
         const logData = await logRes.json();
-        const newLog = decodeURIComponent(escape(atob(logData.content))) + "\n[EXEC] " + new Date().toLocaleString();
+        const oldLog = decodeURIComponent(escape(atob(logData.content)));
+        const newLog = oldLog + "\n[EXEC] " + new Date().toLocaleString();
         
         await fetch(logUrl, {
             method: 'PUT',
             headers: { "Authorization": `token ${CONFIG.token}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ message: "Counter++", content: btoa(unescape(encodeURIComponent(newLog))), sha: logData.sha })
+            body: JSON.stringify({ message: "Execution Logged", content: btoa(unescape(encodeURIComponent(newLog))), sha: logData.sha })
         });
 
-        showStatus("✅ Done!", "#3fb950");
+        showStatus("✅ Success!", "#3fb950");
         document.getElementById('execContent').value = "";
         loadLogs();
-    } catch (e) { showStatus("❌ GitHub 401 Error", "#f85149"); }
+    } catch (e) { showStatus("❌ Error 401 (Check Token)", "#f85149"); }
 }
 
 async function updateGitHub(file, content) {
@@ -173,7 +184,7 @@ async function updateGitHub(file, content) {
     });
 }
 
-// ЛОГИ ТА ІНШЕ
+// ЗАВАНТАЖЕННЯ ДАНИХ
 async function loadLogs() {
     try {
         const res = await fetch(`https://raw.githubusercontent.com/${CONFIG.owner}/${CONFIG.repo}/main/uptadeLOG?t=${Date.now()}`);
@@ -192,7 +203,7 @@ async function loadGames() {
         text.split('\n').forEach(line => {
             if(!line.trim()) return;
             const url = line.trim();
-            const name = url.split('/').pop();
+            const name = url.split('/').pop() || "Game";
             const div = document.createElement('div');
             div.style = "display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #1a1a1a;";
             div.innerHTML = `<span>${name}</span><button onclick="window.open('${url}','_blank')" style="background:#5865f2; color:white; border:none; padding:5px 12px; border-radius:5px; cursor:pointer;">Play</button>`;
@@ -225,11 +236,11 @@ function updateTime() {
     }, 1000);
 }
 
-// ІНІЦІАЛІЗАЦІЯ
+// СТАРТ
 window.onload = () => {
-    const saved = localStorage.getItem('makzik_active_key');
-    if(saved) {
-        document.getElementById('licenseKey').value = saved;
+    const savedKey = localStorage.getItem('makzik_active_key');
+    if(savedKey) {
+        document.getElementById('licenseKey').value = savedKey;
         activateUI();
     }
     loadLogs();
@@ -242,9 +253,8 @@ const i18n = {
 };
 
 function changeLang() {
-    const l = document.getElementById('langSelect').value;
-    const lang = i18n[l];
-    for(let id in lang) document.getElementById(id).innerText = lang[id];
+    const lang = i18n[document.getElementById('langSelect').value];
+    for(let id in lang) if(document.getElementById(id)) document.getElementById(id).innerText = lang[id];
 }
 </script>
 </body>
