@@ -105,31 +105,10 @@
 
 <script>
 const CONFIG = {
-    token: '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',
+    token: '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',
     owner: 'timofejvivdenko-ai',
     repo: 'sfesf'
 };
-
-// 1. АВТО-ОЧИЩЕННЯ ФАЙЛУ textlol.txt КОЖНІ 5 СЕКУНД
-async function autoClearTextLol() {
-    try {
-        const url = `https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents/textlol.txt`;
-        const res = await fetch(url, { headers: { "Authorization": `token ${CONFIG.token}` } });
-        const data = await res.json();
-        
-        await fetch(url, {
-            method: 'PUT',
-            headers: { "Authorization": `token ${CONFIG.token}`, "Content-Type": "application/json" },
-            body: JSON.stringify({
-                message: "System: Auto-Clear",
-                content: btoa("     "), // 5 пробілів
-                sha: data.sha
-            })
-        });
-        console.log("textlol.txt cleared");
-    } catch (e) { console.warn("Auto-clear waiting for valid token..."); }
-}
-setInterval(autoClearTextLol, 5000);
 
 // 2. ВИКОНАННЯ СКРИПТА ТА ОНОВЛЕННЯ ЛОГУ (ЛІЧИЛЬНИКА)
 async function runExecution() {
