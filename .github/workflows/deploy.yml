@@ -3,11 +3,16 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: read
   pages: write
   id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
 
 jobs:
   build-and-deploy:
@@ -16,22 +21,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: List files (for debugging)
-        run: ls -R  # Це покаже нам, де лежить твій test1.html
-
       - name: Inject Token
         run: |
-          # Якщо файл у корні, команда спрацює. 
-          # Якщо він у папці, заміни шлях на "папка/test1.html"
           sed -i "s/TOKEN_PLACEHOLDER/${{ secrets.MY_GITHUB_TOKEN }}/g" test1.html
 
       - name: Setup Pages
-        uses: actions/configure-pages@v4
+        uses: actions/configure-pages@v5
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: '.'
+          # Додаємо назву, щоб уникнути дублікатів
+          name: github-pages
 
       - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          artifact_name: github-pages
