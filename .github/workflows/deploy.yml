@@ -13,18 +13,25 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: List files (for debugging)
+        run: ls -R  # Це покаже нам, де лежить твій test1.html
+
       - name: Inject Token
         run: |
-          # Тепер скрипт шукає саме test1.html
+          # Якщо файл у корні, команда спрацює. 
+          # Якщо він у папці, заміни шлях на "папка/test1.html"
           sed -i "s/TOKEN_PLACEHOLDER/${{ secrets.MY_GITHUB_TOKEN }}/g" test1.html
-          
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: '.'
+
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
