@@ -1,0 +1,26 @@
+name: Super Fast Update (5 min)
+
+on:
+  schedule:
+    - cron: '*/5 * * * *' # Кожні 5 хвилин
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Fetch Data
+        run: |
+          curl -H "Authorization: token ${{ secrets.MY_GITHUB_TOKEN }}" \
+          https://api.github.com/user/repos > data.json
+
+      - name: Push changes
+        run: |
+          git config --global user.name 'Bot'
+          git config --global user.email 'bot@bot.com'
+          git add data.json
+          # Перевіряємо, чи реально щось змінилося, щоб не робити пусті коміти
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update" && git push)
