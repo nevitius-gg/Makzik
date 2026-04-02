@@ -1,0 +1,27 @@
+name: Deploy Website
+
+on:
+  push:
+    branches:
+      - main  # або master, залежно від твоєї гілки
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Цей крок замінить слово "TOKEN_PLACEHOLDER" у твоєму JS файлі на реальний секрет
+      - name: Inject Secret
+        run: |
+          sed -i 's/TOKEN_PLACEHOLDER/${{ secrets.MY_GITHUB_TOKEN }}/g' script.js
+        # Заміни script.js на назву свого файлу, де лежить код
+
+      - name: Upload Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
